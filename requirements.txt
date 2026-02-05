@@ -1,0 +1,13 @@
+# Core
+fastapi
+uvicorn[standard]
+pydantic
+
+# HTTP client
+requests
+
+# Configuration
+python-dotenv
+
+# Logging
+termcolor

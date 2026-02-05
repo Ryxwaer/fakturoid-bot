@@ -1,0 +1,1 @@
+"""Fakturoid Invoice REST API"""
