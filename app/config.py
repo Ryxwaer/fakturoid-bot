@@ -40,11 +40,16 @@ class AppConfig:
     
     def _load_env(self):
         """Load environment variables"""
+        # Fakturoid API credentials
         self.FAKTUROID_CLIENT_ID = os.getenv("FAKTUROID_CLIENT_ID")
         self.FAKTUROID_CLIENT_SECRET = os.getenv("FAKTUROID_CLIENT_SECRET")
         self.FAKTUROID_ACCOUNT_SLUG = os.getenv("FAKTUROID_ACCOUNT_SLUG")
         self.USER_AGENT = os.getenv("USER_AGENT", "FakturoidBot (bot@example.com)")
         self.TEMPLATES_PATH = os.getenv("TEMPLATES_PATH", "/app/config/templates.json")
+        
+        # API Basic Auth credentials
+        self.API_USERNAME = os.getenv("API_USERNAME")
+        self.API_PASSWORD = os.getenv("API_PASSWORD")
         
         # Validate required env vars
         missing = []
@@ -54,6 +59,10 @@ class AppConfig:
             missing.append("FAKTUROID_CLIENT_SECRET")
         if not self.FAKTUROID_ACCOUNT_SLUG:
             missing.append("FAKTUROID_ACCOUNT_SLUG")
+        if not self.API_USERNAME:
+            missing.append("API_USERNAME")
+        if not self.API_PASSWORD:
+            missing.append("API_PASSWORD")
         
         if missing:
             print(colored(f"✗ Missing environment variables: {', '.join(missing)}", "red"))

@@ -6,6 +6,19 @@ This skill allows you to create invoices in Fakturoid and retrieve PDFs. The API
 
 **Base URL:** `http://fakturoid-invoice-api:8000` (internal Docker network)
 
+## Authentication
+
+All endpoints (except `/health`) require HTTP Basic Auth.
+
+```bash
+curl -u "username:password" http://fakturoid-invoice-api:8000/templates
+```
+
+Or with header:
+```bash
+curl -H "Authorization: Basic $(echo -n 'username:password' | base64)" ...
+```
+
 ---
 
 ## Datasentics Invoice
@@ -36,7 +49,7 @@ POST /invoice/datasentics
 ### Example Request
 
 ```bash
-curl -X POST http://fakturoid-invoice-api:8000/invoice/datasentics \
+curl -u "$API_USER:$API_PASS" -X POST http://fakturoid-invoice-api:8000/invoice/datasentics \
   -H "Content-Type: application/json" \
   -d '{
     "lines": {
@@ -95,7 +108,7 @@ curl -X POST http://fakturoid-invoice-api:8000/invoice/datasentics \
 Extract and decode the PDF directly from the response (no need to handle base64 in context):
 
 ```bash
-curl -s -X POST http://fakturoid-invoice-api:8000/invoice/datasentics \
+curl -s -u "$API_USER:$API_PASS" -X POST http://fakturoid-invoice-api:8000/invoice/datasentics \
   -H "Content-Type: application/json" \
   -d '{"lines": {"Projektové práce - vyšší sazba": 10, "Interní projekty": 5}}' \
   | jq -r '.pdf_base64' | base64 -d > invoice.pdf
@@ -105,7 +118,7 @@ To get both the invoice details AND save the PDF:
 
 ```bash
 # Save full response and extract PDF in one go
-curl -s -X POST http://fakturoid-invoice-api:8000/invoice/datasentics \
+curl -s -u "$API_USER:$API_PASS" -X POST http://fakturoid-invoice-api:8000/invoice/datasentics \
   -H "Content-Type: application/json" \
   -d '{"lines": {"Projektové práce - vyšší sazba": 10, "Interní projekty": 5}}' \
   | tee >(jq -r '.pdf_base64' | base64 -d > invoice.pdf) \
@@ -118,26 +131,26 @@ This outputs the JSON response (without the large base64 field) while saving the
 
 ## Other Endpoints
 
-### List Available Templates
+### List Available Templates (requires auth)
 
-```
-GET /templates
+```bash
+curl -u "$API_USER:$API_PASS" http://fakturoid-invoice-api:8000/templates
 ```
 
 Shows all configured invoice templates.
 
-### Get Template Details
+### Get Template Details (requires auth)
 
-```
-GET /templates/datasentics
+```bash
+curl -u "$API_USER:$API_PASS" http://fakturoid-invoice-api:8000/templates/datasentics
 ```
 
 Returns template configuration and available line names that can be invoiced.
 
-### Health Check
+### Health Check (no auth required)
 
-```
-GET /health
+```bash
+curl http://fakturoid-invoice-api:8000/health
 ```
 
 Returns API health status.
@@ -156,6 +169,7 @@ Returns API health status.
 | Status | Meaning |
 |--------|---------|
 | 200 | Success |
+| 401 | Unauthorized (invalid or missing credentials) |
 | 400 | Invalid request (wrong line names, missing data) |
 | 404 | Template not found |
 | 500 | Fakturoid API error |

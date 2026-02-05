@@ -10,6 +10,7 @@ services:
     ports:
       - "8000"
     environment:
+      # Fakturoid API credentials
       - FAKTUROID_CLIENT_ID=${FAKTUROID_CLIENT_ID}
       - FAKTUROID_CLIENT_SECRET=${FAKTUROID_CLIENT_SECRET}
       # name
@@ -17,6 +18,9 @@ services:
       # FakturoidBot (bot@example.com)
       - USER_AGENT=${USER_AGENT}
       - TEMPLATES_PATH=/app/config/templates.json
+      # API Basic Auth
+      - API_USERNAME=${API_USERNAME}
+      - API_PASSWORD=${API_PASSWORD}
     # Config is baked into image (see Dockerfile)
     # To update templates: edit config/templates.json and rebuild image
     # For SELinux systems, if you need bind mount use: ./config:/app/config:ro,z

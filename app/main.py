@@ -5,11 +5,13 @@ FastAPI application for creating invoices from configurable templates
 
 import sys
 import base64
+import secrets
 from contextlib import asynccontextmanager
-from typing import Dict
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Path
+from fastapi import FastAPI, HTTPException, Path, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from termcolor import colored
 from dotenv import load_dotenv
 
@@ -33,6 +35,33 @@ load_dotenv()
 # Global service instance
 FAKTUROID_SERVICE: FakturoidService = None
 
+# HTTP Basic Auth
+security = HTTPBasic()
+
+
+def verify_credentials(credentials: Annotated[HTTPBasicCredentials, Depends(security)]):
+    """Verify HTTP Basic Auth credentials"""
+    config = get_config()
+    
+    # Use secrets.compare_digest to prevent timing attacks
+    username_correct = secrets.compare_digest(
+        credentials.username.encode("utf-8"),
+        config.API_USERNAME.encode("utf-8")
+    )
+    password_correct = secrets.compare_digest(
+        credentials.password.encode("utf-8"),
+        config.API_PASSWORD.encode("utf-8")
+    )
+    
+    if not (username_correct and password_correct):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    
+    return credentials.username
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -51,6 +80,12 @@ async def lifespan(app: FastAPI):
     if not config.FAKTUROID_ACCOUNT_SLUG:
         print(colored("✗ Missing FAKTUROID_ACCOUNT_SLUG in environment", "red"))
         raise RuntimeError("Missing FAKTUROID_ACCOUNT_SLUG")
+    
+    if not config.API_USERNAME or not config.API_PASSWORD:
+        print(colored("✗ Missing API_USERNAME or API_PASSWORD in environment", "red"))
+        raise RuntimeError("Missing API_USERNAME or API_PASSWORD")
+    
+    print(colored(f"✓ Basic auth enabled (user: {config.API_USERNAME})", "green"))
     
     # Initialize Fakturoid service
     FAKTUROID_SERVICE = FakturoidService(
@@ -96,7 +131,7 @@ async def health_check():
 
 
 @app.get("/templates", response_model=TemplatesListResponse, tags=["Templates"])
-async def list_templates():
+async def list_templates(username: Annotated[str, Depends(verify_credentials)]):
     """
     List all available invoice templates
     
@@ -125,6 +160,7 @@ async def list_templates():
     tags=["Templates"]
 )
 async def get_template_details(
+    username: Annotated[str, Depends(verify_credentials)],
     template_name: str = Path(..., description="Template name from configuration")
 ):
     """
@@ -170,6 +206,7 @@ async def get_template_details(
     tags=["Invoices"]
 )
 async def create_invoice(
+    username: Annotated[str, Depends(verify_credentials)],
     template_name: str = Path(..., description="Template name from configuration"),
     request: InvoiceRequest = ...
 ):
@@ -270,7 +307,7 @@ async def create_invoice(
 
 
 @app.post("/templates/reload", tags=["Templates"])
-async def reload_templates():
+async def reload_templates(username: Annotated[str, Depends(verify_credentials)]):
     """
     Reload templates from configuration file
     
