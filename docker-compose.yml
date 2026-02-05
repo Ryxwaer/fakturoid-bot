@@ -17,9 +17,9 @@ services:
       # FakturoidBot (bot@example.com)
       - USER_AGENT=${USER_AGENT}
       - TEMPLATES_PATH=/app/config/templates.json
-    volumes:
-      # Mount config for easy template updates without rebuild
-      - ./config:/app/config:ro
+    # Config is baked into image (see Dockerfile)
+    # To update templates: edit config/templates.json and rebuild image
+    # For SELinux systems, if you need bind mount use: ./config:/app/config:ro,z
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health', timeout=5)"]
       interval: 30s
