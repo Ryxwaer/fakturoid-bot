@@ -4,6 +4,7 @@ Handles OAuth authentication and API calls
 """
 
 import sys
+import time
 import base64
 import requests
 from datetime import datetime, timedelta
@@ -144,9 +145,11 @@ class FakturoidService:
         print(colored(f"✓ Invoice created: #{invoice.get('number')} (ID: {invoice.get('id')})", "green"))
         return invoice
     
-    def download_invoice_pdf(self, invoice_id: int) -> bytes:
+    def download_invoice_pdf(self, invoice_id: int, max_retries: int = 5, retry_delay: float = 2.0) -> bytes:
         """
         Download invoice as PDF bytes
+        
+        Retries on 204 (No Content) as Fakturoid may need time to generate PDF
         """
         url = f"{self.BASE_URL}/accounts/{self.ACCOUNT_SLUG}/invoices/{invoice_id}/download.pdf"
         
@@ -155,14 +158,30 @@ class FakturoidService:
         
         print(colored(f"→ Downloading PDF for invoice {invoice_id}...", "yellow"))
         
-        response = requests.get(url, headers=headers, timeout=60)
+        for attempt in range(max_retries):
+            response = requests.get(url, headers=headers, timeout=60)
+            
+            if response.status_code == 200:
+                print(colored(f"✓ PDF downloaded ({len(response.content)} bytes)", "green"))
+                return response.content
+            
+            if response.status_code == 204:
+                # PDF not ready yet, retry after delay
+                if attempt < max_retries - 1:
+                    print(colored(f"  PDF not ready, retrying in {retry_delay}s... ({attempt + 1}/{max_retries})", "yellow"))
+                    time.sleep(retry_delay)
+                    continue
+            
+            # Other error or max retries reached
+            error_detail = f"status={response.status_code}"
+            try:
+                error_detail += f", body={response.text[:500]}"
+            except Exception:
+                pass
+            print(colored(f"✗ Failed to download PDF: {error_detail}", "red"))
+            raise Exception(f"Failed to download PDF: {error_detail}")
         
-        if response.status_code != 200:
-            print(colored(f"✗ Failed to download PDF: {response.status_code}", "red"))
-            raise Exception(f"Failed to download PDF: {response.text}")
-        
-        print(colored(f"✓ PDF downloaded ({len(response.content)} bytes)", "green"))
-        return response.content
+        raise Exception(f"Failed to download PDF after {max_retries} attempts (PDF not ready)")
     
     def build_invoice_lines(
         self,
