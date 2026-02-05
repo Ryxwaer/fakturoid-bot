@@ -4,19 +4,14 @@
 
 This skill allows you to create invoices in Fakturoid and retrieve PDFs. The API automatically fetches current prices from Fakturoid templates - you only need to provide quantities (hours).
 
-**Base URL:** `fakturoid.ryxwaer.com`
+**Base URL:** `https://fakturoid.ryxwaer.com`
 
 ## Authentication
 
 All endpoints (except `/health`) require HTTP Basic Auth.
 
 ```bash
-curl -u "username:password" https://fakturoid.ryxwaer.com/templates
-```
-
-Or with header:
-```bash
-curl -H "Authorization: Basic $(echo -n 'username:password' | base64)" ...
+curl -u "$API_USER:$API_PASS" https://fakturoid.ryxwaer.com/templates
 ```
 
 ---
@@ -25,14 +20,13 @@ curl -H "Authorization: Basic $(echo -n 'username:password' | base64)" ...
 
 Creates a monthly invoice for Datasentics consulting work.
 
-### Endpoint
+### Step 1: Create Invoice
 
 ```
 POST /invoice/datasentics
 ```
 
-### Request
-
+**Request:**
 ```json
 {
   "lines": {
@@ -46,21 +40,14 @@ POST /invoice/datasentics
 - `Projektové práce - vyšší sazba` - Hours for project work at higher rate
 - `Interní projekty` - Hours for internal projects
 
-### Example Request
-
+**Example:**
 ```bash
-curl -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/datasentics \
+curl -s -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/datasentics \
   -H "Content-Type: application/json" \
-  -d '{
-    "lines": {
-      "Projektové práce - vyšší sazba": 10,
-      "Interní projekty": 5
-    }
-  }'
+  -d '{"lines": {"Projektové práce - vyšší sazba": 10, "Interní projekty": 5}}'
 ```
 
-### Response
-
+**Response:**
 ```json
 {
   "success": true,
@@ -70,7 +57,6 @@ curl -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/data
   "currency": "CZK",
   "issued_on": "2026-01-31",
   "due_on": "2026-02-15",
-  "pdf_base64": "JVBERi0xLjQK...",
   "lines": [
     {
       "name": "Projektové práce - vyšší sazba",
@@ -86,7 +72,8 @@ curl -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/data
       "unit_price": 360.0,
       "vat_rate": 0.0
     }
-  ]
+  ],
+  "pdf_url": "/invoice/123456/pdf"
 }
 ```
 
@@ -96,36 +83,49 @@ curl -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/data
 | `success` | boolean | Whether invoice was created |
 | `invoice_id` | integer | Fakturoid invoice ID |
 | `invoice_number` | string | Invoice number (e.g., "2026-0001") |
-| `total` | float | **Total amount to pay** |
+| `total` | float | **Total amount to pay - VERIFY THIS!** |
 | `currency` | string | Currency code (CZK) |
 | `issued_on` | string | Issue date (last day of previous month) |
 | `due_on` | string | Payment due date |
-| `pdf_base64` | string | Invoice PDF encoded as base64 |
 | `lines` | array | Line items with quantities and prices |
+| `pdf_url` | string | Endpoint to download PDF |
 
-### How to Save the PDF
+### Step 2: Validate Total
 
-Extract and decode the PDF directly from the response (no need to handle base64 in context):
+Before downloading the PDF, verify the `total` amount is correct based on the hours provided.
 
-```bash
-curl -s -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/datasentics \
-  -H "Content-Type: application/json" \
-  -d '{"lines": {"Projektové práce - vyšší sazba": 10, "Interní projekty": 5}}' \
-  | jq -r '.pdf_base64' | base64 -d > invoice.pdf
+### Step 3: Download PDF
+
+After confirming the total is correct, download the PDF directly to file:
+
+```
+GET /invoice/{invoice_id}/pdf
 ```
 
-To get both the invoice details AND save the PDF:
-
+**Example (save directly to file):**
 ```bash
-# Save full response and extract PDF in one go
-curl -s -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/datasentics \
-  -H "Content-Type: application/json" \
-  -d '{"lines": {"Projektové práce - vyšší sazba": 10, "Interní projekty": 5}}' \
-  | tee >(jq -r '.pdf_base64' | base64 -d > invoice.pdf) \
-  | jq 'del(.pdf_base64)'
+curl -s -u "$API_USER:$API_PASS" https://fakturoid.ryxwaer.com/invoice/123456/pdf > invoice.pdf
 ```
 
-This outputs the JSON response (without the large base64 field) while saving the PDF to file.
+The PDF is returned directly as binary content (application/pdf), not base64 encoded.
+
+---
+
+## Complete Workflow Example
+
+```bash
+# 1. Create invoice and get metadata
+RESPONSE=$(curl -s -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/datasentics \
+  -H "Content-Type: application/json" \
+  -d '{"lines": {"Projektové práce - vyšší sazba": 10, "Interní projekty": 5}}')
+
+# 2. Check the response (total, invoice_number, etc.)
+echo "$RESPONSE" | jq
+
+# 3. Extract invoice_id and download PDF
+INVOICE_ID=$(echo "$RESPONSE" | jq -r '.invoice_id')
+curl -s -u "$API_USER:$API_PASS" "https://fakturoid.ryxwaer.com/invoice/$INVOICE_ID/pdf" > invoice.pdf
+```
 
 ---
 
@@ -137,23 +137,19 @@ This outputs the JSON response (without the large base64 field) while saving the
 curl -u "$API_USER:$API_PASS" https://fakturoid.ryxwaer.com/templates
 ```
 
-Shows all configured invoice templates.
-
 ### Get Template Details (requires auth)
 
 ```bash
 curl -u "$API_USER:$API_PASS" https://fakturoid.ryxwaer.com/templates/datasentics
 ```
 
-Returns template configuration and available line names that can be invoiced.
+Returns available line names that can be invoiced.
 
 ### Health Check (no auth required)
 
 ```bash
 curl https://fakturoid.ryxwaer.com/health
 ```
-
-Returns API health status.
 
 ---
 
@@ -162,7 +158,8 @@ Returns API health status.
 1. **Issue Date**: Always set to the last day of the previous month (automatic)
 2. **Prices**: Fetched live from Fakturoid generator template - if prices change in Fakturoid, invoices will use new prices
 3. **Line Names**: Must match exactly as defined in Fakturoid generator (case-sensitive)
-4. **PDF**: Always included in response as base64-encoded string
+4. **Validation**: Always verify the `total` amount before downloading the PDF
+5. **PDF Download**: Returns binary PDF directly - pipe to file with `> invoice.pdf`
 
 ## Error Handling
 
@@ -171,7 +168,7 @@ Returns API health status.
 | 200 | Success |
 | 401 | Unauthorized (invalid or missing credentials) |
 | 400 | Invalid request (wrong line names, missing data) |
-| 404 | Template not found |
+| 404 | Template or invoice not found |
 | 500 | Fakturoid API error |
 
 Error response format:

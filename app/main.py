@@ -5,7 +5,6 @@ FastAPI application for creating invoices from configurable templates
 
 import os
 import sys
-import base64
 import secrets
 from contextlib import asynccontextmanager
 from typing import Annotated
@@ -253,7 +252,7 @@ async def create_invoice(
     - Line prices: Fetched from Fakturoid generator template
     - Line quantities: From request body
     
-    Returns the created invoice details with PDF as base64
+    Returns invoice metadata (total, lines, etc.) - use /invoice/{id}/pdf to download PDF
     """
     config = get_config()
     template = config.get_template(template_name)
@@ -297,11 +296,7 @@ async def create_invoice(
             due_days=template.due_days
         )
         
-        # 4. Download PDF
-        pdf_bytes = FAKTUROID_SERVICE.download_invoice_pdf(invoice["id"])
-        pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
-        
-        # 5. Build response
+        # 4. Build response (no PDF - use /invoice/{id}/pdf endpoint)
         response_lines = [
             InvoiceLine(
                 name=line["name"],
@@ -321,8 +316,8 @@ async def create_invoice(
             currency=invoice.get("currency", "CZK"),
             issued_on=invoice.get("issued_on", issue_date),
             due_on=invoice.get("due_on", ""),
-            pdf_base64=pdf_base64,
-            lines=response_lines
+            lines=response_lines,
+            pdf_url=f"/invoice/{invoice['id']}/pdf"
         )
         
     except ValueError as e:
@@ -335,6 +330,47 @@ async def create_invoice(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to create invoice: {str(e)}"
+        )
+
+
+@app.get(
+    "/invoice/{invoice_id}/pdf",
+    responses={
+        404: {"model": ErrorResponse},
+        500: {"model": ErrorResponse}
+    },
+    tags=["Invoices"]
+)
+async def download_invoice_pdf(
+    username: Annotated[str, Depends(verify_credentials)],
+    invoice_id: int = Path(..., description="Invoice ID from create response")
+):
+    """
+    Download invoice PDF
+    
+    Returns the PDF file directly (application/pdf content type).
+    Use after creating invoice and validating the total amount.
+    
+    Pipe directly to file: curl ... > invoice.pdf
+    """
+    from fastapi.responses import Response
+    
+    try:
+        pdf_bytes = FAKTUROID_SERVICE.download_invoice_pdf(invoice_id)
+        
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=invoice_{invoice_id}.pdf"
+            }
+        )
+        
+    except Exception as e:
+        print(colored(f"✗ Error downloading PDF: {e}", "red"))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to download PDF: {str(e)}"
         )
 
 

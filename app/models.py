@@ -25,7 +25,7 @@ class InvoiceLine(BaseModel):
 
 
 class InvoiceResponse(BaseModel):
-    """Response model for created invoice"""
+    """Response model for created invoice (metadata only, no PDF)"""
     success: bool
     invoice_id: int
     invoice_number: str
@@ -33,8 +33,8 @@ class InvoiceResponse(BaseModel):
     currency: str
     issued_on: str
     due_on: str
-    pdf_base64: str
     lines: List[InvoiceLine]
+    pdf_url: str  # URL to download PDF
 
 
 class ErrorResponse(BaseModel):
