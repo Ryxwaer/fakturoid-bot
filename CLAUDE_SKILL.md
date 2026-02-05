@@ -52,8 +52,8 @@ curl -s -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/d
 {
   "success": true,
   "invoice_id": 123456,
-  "invoice_number": "20260001",
-  "filename": "adampolicek-20260001.pdf",
+  "invoice_number": "20260101",
+  "filename": "adampolicek-20260101.pdf",
   "total": 6030.0,
   "currency": "CZK",
   "issued_on": "2026-01-31",
@@ -83,8 +83,8 @@ curl -s -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/d
 |-------|------|-------------|
 | `success` | boolean | Whether invoice was created |
 | `invoice_id` | integer | Fakturoid invoice ID |
-| `invoice_number` | string | Invoice number (e.g., "20260001") |
-| `filename` | string | Suggested PDF filename (e.g., "adampolicek-20260001.pdf") |
+| `invoice_number` | string | Invoice number (e.g., "20260101") |
+| `filename` | string | Suggested PDF filename (e.g., "adampolicek-20260101.pdf") |
 | `total` | float | **Total amount to pay - VERIFY THIS!** |
 | `currency` | string | Currency code (CZK) |
 | `issued_on` | string | Issue date (last day of previous month) |
