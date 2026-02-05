@@ -4,14 +4,14 @@
 
 This skill allows you to create invoices in Fakturoid and retrieve PDFs. The API automatically fetches current prices from Fakturoid templates - you only need to provide quantities (hours).
 
-**Base URL:** `http://fakturoid-invoice-api:8000` (internal Docker network)
+**Base URL:** `fakturoid.ryxwaer.com`
 
 ## Authentication
 
 All endpoints (except `/health`) require HTTP Basic Auth.
 
 ```bash
-curl -u "username:password" http://fakturoid-invoice-api:8000/templates
+curl -u "username:password" https://fakturoid.ryxwaer.com/templates
 ```
 
 Or with header:
@@ -49,7 +49,7 @@ POST /invoice/datasentics
 ### Example Request
 
 ```bash
-curl -u "$API_USER:$API_PASS" -X POST http://fakturoid-invoice-api:8000/invoice/datasentics \
+curl -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/datasentics \
   -H "Content-Type: application/json" \
   -d '{
     "lines": {
@@ -108,7 +108,7 @@ curl -u "$API_USER:$API_PASS" -X POST http://fakturoid-invoice-api:8000/invoice/
 Extract and decode the PDF directly from the response (no need to handle base64 in context):
 
 ```bash
-curl -s -u "$API_USER:$API_PASS" -X POST http://fakturoid-invoice-api:8000/invoice/datasentics \
+curl -s -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/datasentics \
   -H "Content-Type: application/json" \
   -d '{"lines": {"Projektové práce - vyšší sazba": 10, "Interní projekty": 5}}' \
   | jq -r '.pdf_base64' | base64 -d > invoice.pdf
@@ -118,7 +118,7 @@ To get both the invoice details AND save the PDF:
 
 ```bash
 # Save full response and extract PDF in one go
-curl -s -u "$API_USER:$API_PASS" -X POST http://fakturoid-invoice-api:8000/invoice/datasentics \
+curl -s -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/datasentics \
   -H "Content-Type: application/json" \
   -d '{"lines": {"Projektové práce - vyšší sazba": 10, "Interní projekty": 5}}' \
   | tee >(jq -r '.pdf_base64' | base64 -d > invoice.pdf) \
@@ -134,7 +134,7 @@ This outputs the JSON response (without the large base64 field) while saving the
 ### List Available Templates (requires auth)
 
 ```bash
-curl -u "$API_USER:$API_PASS" http://fakturoid-invoice-api:8000/templates
+curl -u "$API_USER:$API_PASS" https://fakturoid.ryxwaer.com/templates
 ```
 
 Shows all configured invoice templates.
@@ -142,7 +142,7 @@ Shows all configured invoice templates.
 ### Get Template Details (requires auth)
 
 ```bash
-curl -u "$API_USER:$API_PASS" http://fakturoid-invoice-api:8000/templates/datasentics
+curl -u "$API_USER:$API_PASS" https://fakturoid.ryxwaer.com/templates/datasentics
 ```
 
 Returns template configuration and available line names that can be invoiced.
@@ -150,7 +150,7 @@ Returns template configuration and available line names that can be invoiced.
 ### Health Check (no auth required)
 
 ```bash
-curl http://fakturoid-invoice-api:8000/health
+curl https://fakturoid.ryxwaer.com/health
 ```
 
 Returns API health status.

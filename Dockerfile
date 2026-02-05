@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY app/ ./app/
 COPY config/ ./config/
+COPY CLAUDE_SKILL.md ./
 
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash appuser

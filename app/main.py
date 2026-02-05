@@ -3,6 +3,7 @@ Fakturoid Invoice REST API
 FastAPI application for creating invoices from configurable templates
 """
 
+import os
 import sys
 import base64
 import secrets
@@ -12,6 +13,7 @@ from typing import Annotated
 from fastapi import FastAPI, HTTPException, Path, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.responses import PlainTextResponse
 from termcolor import colored
 from dotenv import load_dotenv
 
@@ -118,6 +120,36 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Path to skill documentation
+SKILL_FILE_PATH = os.getenv("SKILL_FILE_PATH", "/app/CLAUDE_SKILL.md")
+
+
+@app.get("/", response_class=PlainTextResponse, tags=["Documentation"])
+async def get_skill_documentation(username: Annotated[str, Depends(verify_credentials)]):
+    """
+    Get API skill documentation (CLAUDE_SKILL.md)
+    
+    Returns the skill documentation in markdown format for AI assistants
+    """
+    # Try multiple paths
+    paths_to_try = [
+        SKILL_FILE_PATH,
+        "CLAUDE_SKILL.md",
+        "./CLAUDE_SKILL.md",
+        "/app/CLAUDE_SKILL.md"
+    ]
+    
+    for path in paths_to_try:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                return f.read()
+    
+    raise HTTPException(
+        status_code=404,
+        detail="Skill documentation not found"
+    )
 
 
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
