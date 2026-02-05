@@ -29,6 +29,7 @@ class InvoiceResponse(BaseModel):
     success: bool
     invoice_id: int
     invoice_number: str
+    filename: str  # Suggested filename for PDF
     total: float
     currency: str
     issued_on: str

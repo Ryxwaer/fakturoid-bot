@@ -308,10 +308,12 @@ async def create_invoice(
             for line in invoice.get("lines", [])
         ]
         
+        invoice_number = invoice["number"]
         return InvoiceResponse(
             success=True,
             invoice_id=invoice["id"],
-            invoice_number=invoice["number"],
+            invoice_number=invoice_number,
+            filename=f"{config.FAKTUROID_ACCOUNT_SLUG}-{invoice_number}.pdf",
             total=float(invoice.get("total", 0)),
             currency=invoice.get("currency", "CZK"),
             issued_on=invoice.get("issued_on", issue_date),
