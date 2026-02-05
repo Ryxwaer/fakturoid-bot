@@ -11,7 +11,7 @@ This skill allows you to create invoices in Fakturoid and retrieve PDFs. The API
 All endpoints (except `/health`) require HTTP Basic Auth.
 
 ```bash
-curl -u "$API_USER:$API_PASS" https://fakturoid.ryxwaer.com/templates
+curl -u "$API_USER:$API_PASS" https://fakturoid.ryxwaer.com/
 ```
 
 ---
@@ -92,7 +92,7 @@ curl -s -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/d
 
 ### Step 2: Validate Total
 
-Before downloading the PDF, verify the `total` amount is correct based on the hours provided.
+Before downloading the PDF, verify the `total` amount is correct based on the data provided.
 
 ### Step 3: Download PDF
 
@@ -155,7 +155,7 @@ curl https://fakturoid.ryxwaer.com/health
 
 ## Important Notes
 
-1. **Issue Date**: Always set to the last day of the previous month (automatic)
+1. **Issue Date**: Always set to the last day of the previous month (automatic by template)
 2. **Prices**: Fetched live from Fakturoid generator template - if prices change in Fakturoid, invoices will use new prices
 3. **Line Names**: Must match exactly as defined in Fakturoid generator (case-sensitive)
 4. **Validation**: Always verify the `total` amount before downloading the PDF
