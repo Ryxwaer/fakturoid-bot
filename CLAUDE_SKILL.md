@@ -11,7 +11,7 @@ This skill allows you to create invoices in Fakturoid and retrieve PDFs. The API
 All endpoints (except `/health`) require HTTP Basic Auth.
 
 ```bash
-curl -u "$API_USER:$API_PASS" https://fakturoid.ryxwaer.com/
+curl -u "$API_USER:$API_PASS" http://fakturoid-api:8000/
 ```
 
 ---
@@ -42,7 +42,7 @@ POST /invoice/datasentics
 
 **Example:**
 ```bash
-curl -s -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/datasentics \
+curl -s -u "$API_USER:$API_PASS" -X POST http://fakturoid-api:8000/invoice/datasentics \
   -H "Content-Type: application/json" \
   -d '{"lines": {"Projektové práce - vyšší sazba": 10, "Interní projekty": 5}}'
 ```
@@ -106,7 +106,7 @@ GET /invoice/{invoice_id}/pdf
 
 **Example (save directly to file):**
 ```bash
-curl -s -u "$API_USER:$API_PASS" https://fakturoid.ryxwaer.com/invoice/123456/pdf > invoice.pdf
+curl -s -u "$API_USER:$API_PASS" http://fakturoid-api:8000/invoice/123456/pdf > invoice.pdf
 ```
 
 The PDF is returned directly as binary content (application/pdf), not base64 encoded.
@@ -117,7 +117,7 @@ The PDF is returned directly as binary content (application/pdf), not base64 enc
 
 ```bash
 # 1. Create invoice and get metadata
-RESPONSE=$(curl -s -u "$API_USER:$API_PASS" -X POST https://fakturoid.ryxwaer.com/invoice/datasentics \
+RESPONSE=$(curl -s -u "$API_USER:$API_PASS" -X POST http://fakturoid-api:8000/invoice/datasentics \
   -H "Content-Type: application/json" \
   -d '{"lines": {"Projektové práce - vyšší sazba": 10, "Interní projekty": 5}}')
 
@@ -127,7 +127,7 @@ echo "$RESPONSE" | jq
 # 3. Extract invoice_id and filename, then download PDF
 INVOICE_ID=$(echo "$RESPONSE" | jq -r '.invoice_id')
 FILENAME=$(echo "$RESPONSE" | jq -r '.filename')
-curl -s -u "$API_USER:$API_PASS" "https://fakturoid.ryxwaer.com/invoice/$INVOICE_ID/pdf" > "$FILENAME"
+curl -s -u "$API_USER:$API_PASS" "http://fakturoid-api:8000/invoice/$INVOICE_ID/pdf" > "$FILENAME"
 ```
 
 ---
@@ -137,13 +137,13 @@ curl -s -u "$API_USER:$API_PASS" "https://fakturoid.ryxwaer.com/invoice/$INVOICE
 ### List Available Templates (requires auth)
 
 ```bash
-curl -u "$API_USER:$API_PASS" https://fakturoid.ryxwaer.com/templates
+curl -u "$API_USER:$API_PASS" http://fakturoid-api:8000/templates
 ```
 
 ### Get Template Details (requires auth)
 
 ```bash
-curl -u "$API_USER:$API_PASS" https://fakturoid.ryxwaer.com/templates/datasentics
+curl -u "$API_USER:$API_PASS" http://fakturoid-api:8000/templates/datasentics
 ```
 
 Returns available line names that can be invoiced.
@@ -151,7 +151,7 @@ Returns available line names that can be invoiced.
 ### Health Check (no auth required)
 
 ```bash
-curl https://fakturoid.ryxwaer.com/health
+curl http://fakturoid-api:8000/health
 ```
 
 ---
